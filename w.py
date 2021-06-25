@@ -2,6 +2,8 @@ import urllib.request
 import string
 from multiprocessing import Pool
 import time
+
+import requests as requests
 from bs4 import BeautifulSoup
 
 # tor address schema
@@ -9,6 +11,12 @@ symbols = string.ascii_lowercase + "".join(map(str, range(2, 8)))
 known_tor = []
 known_down = []
 success_file = open('success.txt', 'a')
+proxies = {
+    "http": "socks5h://127.0.0.1:9050",
+    "https": "socks5h://127.0.0.1:9050"
+}
+
+# urllib.request.ProxyHandler(proxies=proxies)
 
 def increment(start):
     # if right - most digit is not max, add 1 to
@@ -23,9 +31,11 @@ def increment(start):
         # get next in list (add 1)
         return rest + symbols[symbols.find(digit) + 1]
 
+
 def tor_ping(start, log=True):
     try:
         print("TESTING: http://" + start + ".onion/")
+
         with urllib.request.urlopen('http://' + start + '.onion/', timeout=2) as response:
             html = response.read()
             code = response.getcode()
@@ -39,6 +49,7 @@ def tor_ping(start, log=True):
     except:
         print("FAILED: http://" + start + ".onion/")
         return False
+
 
 def main():
     # torify curl http://3g2upl4pq6kufc4m.onion/
@@ -67,6 +78,7 @@ def main():
         n = n + 1
         file_target.write("\nLast address: " + all[len(all) -1])
         file_target.close()
+
 
 def calc_ms(file):
     nCounter = 0
@@ -97,27 +109,37 @@ def calc_ms(file):
     avg = elapsed / nCounter
     return [minimum, avg, maximum]
 
+
 def crawl():
     # open known_tor_sites
     get_known_tor = open("known_tor_sites", 'r')
     lines = get_known_tor.readlines()
+
     for l in lines:
         original_line = l
         # hit site as in the file and base of site, ie, http://w.com/x/y/z.html and http://w.com
         l = [ l.strip() ]
         l2 = "/".join(original_line.split("/")[0:3])
-        if (l != l2):
+        if l != l2:
             l += [ l2 ]
         crawl_array(l)
+
+
 def crawl_array(arry):
-    def root_site(site):
-        root = site.split("/")[2]
+    def root_site(s):
+        root = s.split("/")[2]
         return root.split(".onion")[0]
+
     for site in arry:
         try:
-            with urllib.request.urlopen(site, timeout=10) as response:
-                html = response.read()
-                code = response.getcode()
+            # urllib.request.ProxyHandler(proxies=proxies)
+            # res = requests.get('https://3g2upl4pq6kufc4m.onion/', proxies=proxies)
+            site = 'https://3g2upl4pq6kufc4m.onion/'
+
+            with requests.get(site, proxies=proxies) as response:
+                html = response.content
+                code = response.status_code
+
                 if len(html) > 0 and code == 200:
                     file_name = root_site(site)
                     # top level only
@@ -127,12 +149,15 @@ def crawl_array(arry):
                     link_array = soup.find_all('a')
                     #print ("link_array length:" + str(len(link_array)))
                     link_array = [x for x in link_array if ".onion" in x]
+
                     if len(link_array) > 0:
                         print ("FOUND SOME: " + "\n".join(link_array))
                         crawl_array(link_array)
+
         except Exception as e:
             print("SITE: " + site + ":::" + e)
             pass
+
 
 if __name__ == '__main__':
     crawl()
