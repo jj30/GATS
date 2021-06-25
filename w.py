@@ -2,9 +2,9 @@ import urllib.request
 import string
 from multiprocessing import Pool
 import time
-
 import requests as requests
 from bs4 import BeautifulSoup
+import re
 
 # tor address schema
 symbols = string.ascii_lowercase + "".join(map(str, range(2, 8)))
@@ -15,6 +15,7 @@ proxies = {
     "http": "socks5h://127.0.0.1:9050",
     "https": "socks5h://127.0.0.1:9050"
 }
+regexp_onion_url = r'http\S*?\.onion'
 
 # urllib.request.ProxyHandler(proxies=proxies)
 
@@ -114,48 +115,87 @@ def crawl():
     # open known_tor_sites
     get_known_tor = open("known_tor_sites", 'r')
     lines = get_known_tor.readlines()
+    sites = []
 
     for l in lines:
-        original_line = l
-        # hit site as in the file and base of site, ie, http://w.com/x/y/z.html and http://w.com
-        l = [ l.strip() ]
-        l2 = "/".join(original_line.split("/")[0:3])
-        if l != l2:
-            l += [ l2 ]
-        crawl_array(l)
+        # http://w.com/x/y/z.html => http://w.com
+        line_array_first3 = "/".join(l.split("/")[0:3])
+        if not(line_array_first3 in sites):
+            sites.append(line_array_first3)
+
+    crawl_array(sites)
 
 
 def crawl_array(arry):
     def root_site(s):
-        root = s.split("/")[2]
+        # http://x.onion/y/z => http://x.onion/
+        all_matches = re.findall(regexp_onion_url, s)
+        return all_matches[0] if len(all_matches) > 0 else s
+
+    def filename(site):
+        root = site.split("/")[2]
         return root.split(".onion")[0]
+
+    # if you don't, 403
+    send_headers = {
+         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+         'Accept-Encoding': 'gzip, deflate, br',
+         'Accept-Language': 'en-US,en;q=0.5',
+         'Connection': 'keep-alive',
+         'Upgrade-Insecure-Requests': '1',
+         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0',
+    }
+
+    #     'Cache-Control': 'max-age=0',
+    #     'Cookie': '_pk_id.1.97a3=c501706669b695a6.1624642928.; _pk_ses.1.97a3=1',
+    #     'DNT': '1',
+    #     'Host': 'thehiddenwiki.cc',
+    #     'Sec-GPC': '1',
+    #     'TE': 'Trailers',
+    #     'Referer': 'https://www.host.com/bla/bla/',
+    #     'Content-Type': 'application/json',
+    #     'X-Requested-With': 'XMLHttpRequest',
+    #     'Origin': 'https://www.host.com',
 
     for site in arry:
         try:
             # urllib.request.ProxyHandler(proxies=proxies)
             # res = requests.get('https://3g2upl4pq6kufc4m.onion/', proxies=proxies)
-            site = 'https://3g2upl4pq6kufc4m.onion/'
+            # site = 'https://3g2upl4pq6kufc4m.onion/'
 
-            with requests.get(site, proxies=proxies) as response:
-                html = response.content
-                code = response.status_code
+            # if (site == 'http://www.darkfailenbsdla5mal2mxn2uz66od5vtzd5qozslagrfzachha3f3id.onion/'):
+            #    print ('hit it')
 
-                if len(html) > 0 and code == 200:
-                    file_name = root_site(site)
-                    # top level only
-                    scrape = open("HTMLPages/" + file_name + ".html", 'w')
-                    scrape.write(html.decode("utf-8", errors="ignore"))
-                    soup = BeautifulSoup(html, 'html.parser')
-                    link_array = soup.find_all('a')
-                    #print ("link_array length:" + str(len(link_array)))
-                    link_array = [x for x in link_array if ".onion" in x]
+            with requests.get(site, proxies=proxies, headers=send_headers) as response:
+                try:
+                    html = response.content
+                    code = response.status_code
 
-                    if len(link_array) > 0:
-                        print ("FOUND SOME: " + "\n".join(link_array))
-                        crawl_array(link_array)
+                    if len(html) > 0 and code == 200:
+                        file_name = filename(root_site(site))
+                        # grab the HTML and save to disk
+                        scrape = open("HTMLPages/" + file_name + ".html", 'w')
+                        html_string = html.decode("utf-8", errors="ignore")
+                        scrape.write(html_string)
+
+                        # get all onion links
+                        link_array = re.findall(regexp_onion_url, html_string)
+
+                        # filter out current site
+                        link_array = [ea for ea in link_array if root_site(ea) != site]
+
+                        if len(link_array) > 0:
+                            print("FOUND SOME: " + "\n".join(link_array))
+                            crawl_array(link_array)
+
+                except Exception:
+                    pass
+
+        except requests.exceptions.ConnectionError:
+            pass
 
         except Exception as e:
-            print("SITE: " + site + ":::" + e)
+            print("SITE: " + site + ":::" + e.message)
             pass
 
 
