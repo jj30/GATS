@@ -3,8 +3,10 @@ import string
 from multiprocessing import Pool
 import time
 import requests as requests
-from bs4 import BeautifulSoup
+# from bs4 import BeautifulSoup
 import re
+from os import listdir
+from os.path import isfile, join
 
 # tor address schema
 symbols = string.ascii_lowercase + "".join(map(str, range(2, 8)))
@@ -158,6 +160,12 @@ def crawl_array(arry):
     #     'Origin': 'https://www.host.com',
 
     for site in arry:
+        file_name = filename(root_site(site))
+        onlyfiles = [f for f in listdir('HTMLPages') if isfile(join('HTMLPages', f))]
+
+        if (file_name + '.html' in onlyfiles):
+            continue
+
         try:
             # urllib.request.ProxyHandler(proxies=proxies)
             # res = requests.get('https://3g2upl4pq6kufc4m.onion/', proxies=proxies)
@@ -172,7 +180,6 @@ def crawl_array(arry):
                     code = response.status_code
 
                     if len(html) > 0 and code == 200:
-                        file_name = filename(root_site(site))
                         # grab the HTML and save to disk
                         scrape = open("HTMLPages/" + file_name + ".html", 'w')
                         html_string = html.decode("utf-8", errors="ignore")
