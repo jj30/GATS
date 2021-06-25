@@ -12,15 +12,15 @@ and restart Tor. This allows Python to use Tor by proxy on port 9050.
 
 There have been substantial improvements to the dark web since I ran this code some years back. First, even with headers, some sites manage to detect that the code is indeed a bot. Or, they just have a captcha for any and all traffic. Either way, the HTMLPages folder will contain HTML that looks like this:
 
-![Versus](./README_Images/versus_is_under_attack.png)
+![Versus](./README_Images/versus_is_under_attack.PNG)
 
 Or even this, which I think is more clever (as if my code could wait and follow a redirection):
 
-![Dread](./README_Images/dread.png)
+![Dread](./README_Images/dread.PNG)
 
 Second, you have to login to see anything, even clues to what might be the site contents. 
 
-![The Hub](./README_Images/login_required.png)
+![The Hub](./README_Images/login_required.PNG)
 
 Third, users are encouraged to use PGP to confirm site identity, and their own identity too (I think). I'm pretty sure that if the FBI takes over a machine, the PGP check will still pass, so I'm not sure what this development buys anyone. 
 
