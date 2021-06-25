@@ -14,8 +14,14 @@ There have been substantial improvements to the dark web since I ran this code s
 
 ![Versus](./README_Images/versus_is_under_attack.png)
 
+Or even this, which I think is more clever (as if my code could wait and follow a redirection):
+
+![Dread](./README_Images/dread.png)
+
 Second, you have to login to see anything, even clues to what might be the site contents. 
 
 ![The Hub](./README_Images/login_required.png)
+
+Third, users are encouraged to use PGP to confirm site identity, and their own identity too (I think). I'm pretty sure that if the FBI takes over a machine, the PGP check will still pass, so I'm not sure what this development buys anyone. 
 
 Despite all of the above, such a crawler/scraper is required for any comprehensive approach to the dark web.
