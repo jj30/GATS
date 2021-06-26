@@ -6,7 +6,7 @@ This code runs on Windows, and has not yet been tested on any Linux flavors, but
 
 SocksPort 9050
 
-and restart Tor. This allows Python to use Tor by proxy on port 9050.
+and restart Tor. This allows Python to use Tor by proxy on port 9050. In linux, this path is \Browser\TorBrowser\Data\Tor.
 
 ## Changes to the Dark Web
 
